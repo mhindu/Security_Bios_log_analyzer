@@ -13,7 +13,7 @@
         "build_date ": ["TDX info", "TDX module build date"],
         "build_num ": ["TDX info", "TDX module build version"],
         "TDX module initialized": ["TDX info", "Is TDX module initialized?"],
-        "svtdx: Driver and seamrr target initialized": ["TDX info", "Is SEAMRR Initialized?"],
+        "Driver and seamrr target initialized": ["TDX info", "Is SEAMRR Initialized?"],
         "SEAMRR_BASE MSR 1400h": ["TDX info", "SEAMRR_BASE MSR 1400h"],
         "SEAMRR_MASK MSR 1401h": ["TDX info", "SEAMRR_MASK MSR 1401h"],
         "LT_STATUS[0xFED30000]": ["BTG & TXT info", "LT_STATUS[0xFED30000]"],
@@ -31,6 +31,8 @@
             "start_index_offset": 0,
             "regex_pattern": "\\b(0x[0-9A-Fa-f]+(?:\\s+[0-9A-Fa-f]+)*)\\b",
             "exclude_chars": [],
+            "process_last_instance": true,
+            "note": "If no regex_pattern is provided, the extracted line will be used directly as the result.",
             "output_cells": {
                 "C2": "ia32_tme_activate_text",
                 "D2": "result_text_str"
@@ -76,6 +78,8 @@
             "start_index_offset": 0,
             "regex_pattern": "\\b(0x[0-9A-Fa-f]+(?:\\s+[0-9A-Fa-f]+)*)\\b",
             "exclude_chars": [],
+            "process_last_instance": true,
+            "note": "If no regex_pattern is provided, the extracted line will be used directly as the result.",
             "output_cells": {
                 "C3": "ia32_tme_capability_text",
                 "D3": "result_text_str"
@@ -104,6 +108,7 @@
             "start_index_offset": 0,
             "regex_pattern": "\\b(\\d+)\\b",
             "exclude_chars": [],
+            "process_last_instance": true,
             "output_cells": {
                 "B4": "Total Keys",
                 "C4": "total_keys_text",
@@ -124,6 +129,7 @@
             "start_index_offset": 0,
             "regex_pattern": "\\b(\\d+)\\b",
             "exclude_chars": [],
+            "process_last_instance": true,
             "output_cells": {
                 "B5": "MKTME Keys",
                 "C5": "mktme_key_text",
@@ -154,6 +160,7 @@
             "regex_pattern": "\\b(0x[0-9A-Fa-f]+)\\b",
             "num_bits": 12,
             "exclude_chars": ["(", ")"],
+            "process_last_instance": true,
             "output_cells": {
                 "B6": "ACTM location",
                 "C6": "actm_location_text"
@@ -165,6 +172,7 @@
         {
             "name": "start ACTM",
             "keyword": "starts ACTM launch (GETSEC[ENTERACCS])",
+            "process_last_instance": true,
             "output_cells": {
                 "B7": "Is ACTM launch started?",
                 "C7": "ACTM launch status",
@@ -182,6 +190,7 @@
             "name": "ACTM error code",
             "keyword": "[ACTM] Socket[00] (SBSP) returned",
             "exclude_chars": ["(", ")"],
+            "process_last_instance": true,
             "output_cells": {
                 "B8": "ACTM ErrorCode",
                 "C8": "actm_error_code_text",
@@ -199,6 +208,7 @@
             "start_index_offset": 0,
             "regex_pattern": "\\b(0x[0-9A-Fa-f]+)\\b",
             "exclude_chars": [],
+            "process_last_instance": true,
             "output_cells": {
                 "B9": "Is this PROD SKU?",
                 "C9": "prod_sku_text",
@@ -220,6 +230,367 @@
                 }
             ],
             "improper_print_message": "Prod SKU status is not present in log"
+        },
+        {
+            "name": "Mcheck Error Code",
+            "keyword": "Error: Mcheck code error -> LP0000",
+            "num_bits": 0,
+            "exclude_chars": ["(", ")"],
+            "process_last_instance": true,
+            "output_cells": {
+                "B10": "Mcheck Error Code ?",
+                "C10": "mcheck_code_text",
+                "D10": "result_text_str"
+            },
+            "secondary_keyword": "[SGX] SgxErrorCode = ",
+            "regex_pattern": "\\b(0x[0-9A-Fa-f]+)\\b",
+            "secondary_condition": {
+                "expected": "0x0",
+                "success_output": "No Mcheck - SGX enabled successfully",
+                "failure_output": "mcheck error code is not present in log"
+            },
+            "use_secondary_if_none": true,
+            "trim_processing": {
+                "trim_whitespace": true,
+                "if_starts_with": "0xF",
+                "replacement_prefix": "0x",
+                "remove_chars_count": 3
+            },
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]+$",
+            "validation_failure_message": "improper print - {mcheck_code_text}",
+            "result_text": [
+                {
+                    "description": "Mcheck Error",
+                    "output_format": "Mcheck Error is {error_description}",
+                    "error_code_file_path": "Mcheck_error_codes.xlsx",
+                    "error_code_column": 0,
+                    "error_description_column": 1
+                }
+            ]
+        },
+        {
+            "name": "SGX enabled check",
+            "keyword": "SGX (Secure Enclaves) feature enabled",
+            "output_cells": {
+                "B11": "Is SGX enabled?",
+                "C11": "sgx_enabled_text",
+                "D11": "sgx_enabled_text"
+            },
+            "improper_print_message": "SGX is not enabled",
+            "secondary_output": "SGX is enabled"
+        },
+        {
+            "name": "TDX build date check",
+            "keyword": "build_date ",
+            "num_bits": 8,
+            "output_cells": {
+                "B12": "TDX module build date",
+                "C12": "tdx_build_date_text",
+                "D12": "tdx_build_date_text"
+            },
+            "improper_print_message": "TDX is not enabled"
+        },
+        {
+            "name": "TDX module initialization check",
+            "keyword": "TDX module initialized",
+            "start_index_offset": 0,
+            "regex_pattern": ".*",
+            "output_cells": {
+                "B13": "Is TDX module initialized?",
+                "C13": "tdx_initialized_text",
+                "D13": "tdx_initialized_text"
+            },
+            "improper_print_message": "TDX module not initialized",
+            "secondary_output": "TDX module initialized"
+        },
+        {
+            "name": "SEAMRR initialization check",
+            "keyword": "Driver and seamrr target initialized",
+            "output_cells": {
+                "B14": "Is SEAMRR Initialized?",
+                "C14": "seamrr_initialized_text",
+                "D14": "seamrr_initialized_text"
+            },
+            "improper_print_message": "SEAMRR target not found",
+            "secondary_output": "Driver and seamrr target initialized"
+        },
+        {
+            "name": "LT_STATUS info",
+            "keyword": "LT_STATUS[0xFED30000]",
+            "start_index_offset": 0,
+            "regex_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "output_cells": {
+                "B15": "LT_STATUS[0xFED30000]",
+                "C15": "lt_status_text",
+                "D15": "lt_status_result"
+            },
+            "improper_print_message": "LT_STATUS is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {lt_status_text}",
+            "result_text": [
+                {
+                    "description": "LT_STATUS check",
+                    "output_format": "bit {bit_position} is {bit_status} - {bit_message}",
+                    "bit_check": 1,
+                    "bit_set_message": "SEEXIT Status is Done",
+                    "bit_unset_message": "SEEXIT Status is Not Done"
+                }
+            ]
+        },
+        {
+            "name": "SEAMRR base range check",
+            "keyword": "SEAMRR_BASE MSR 1400h",
+            "num_bits": 25,
+            "output_cells": {
+                "B16": "SEAMRR_BASE MSR 1400h",
+                "C16": "seamrr_base_text_cleaned",
+                "D16": "seamrr_base_result"
+            },
+            "improper_print_message": "SEAMRR Base range is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {seamrr_base_text_cleaned}",
+            "result_text": [
+                {
+                    "description": "SEAMRR base check",
+                    "output_format": "Bit 3 is {bit3_status}, Bios {bit3_config} SEAMRR_Base",
+                    "bit_check": 3,
+                    "bit_set_text": "set",
+                    "bit_unset_text": "not set",
+                    "bit_set_config": "configured",
+                    "bit_unset_config": "does not configure"
+                }
+            ]
+        },
+        {
+            "name": "SEAMRR mask range check",
+            "keyword": "SEAMRR_MASK MSR 1401h",
+            "num_bits": 25,
+            "output_cells": {
+                "B17": "SEAMRR_MASK MSR 1401h",
+                "C17": "seamrr_mask_text_cleaned",
+                "D17": "seamrr_mask_result"
+            },
+            "improper_print_message": "SEAMRR Mask range is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {seamrr_mask_text_cleaned}",
+            "result_text": [
+                {
+                    "description": "SEAMRR mask check",
+                    "output_format": "{bit10_status} bit 10 lock bit and {bit11_status} bit 11 valid bit are set",
+                    "bit10_check": 10,
+                    "bit11_check": 11,
+                    "bit_set_text": "set",
+                    "bit_unset_text": "not set"
+                }
+            ]
+        },
+        {
+            "name": "LT_STATUS info",
+            "keyword": "LT_STATUS[0xFED30000]",
+            "num_bits": 21,
+            "exclude_chars": ["="],
+            "output_cells": {
+                "B18": "LT_STATUS[0xFED30000]",
+                "C18": "lt_status_info_text",
+                "D18": "lt_status_info_result"
+            },
+            "improper_print_message": "LT_status is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {lt_status_info_text}",
+            "result_text": [
+                {
+                    "description": "LT_STATUS check",
+                    "output_format": "bit {bit_position} is {bit_status} - {bit_message}",
+                    "bit_check": 1,
+                    "bit_set_text": "set",
+                    "bit_unset_text": "not set",
+                    "bit_set_message": "SEEXIT Status is Done",
+                    "bit_unset_message": "SEEXIT Status is Not Done"
+                }
+            ]
+        },
+        {
+            "name": "LT_EXTENDED_STATUS info",
+            "keyword": "LT_EXTENDED_STATUS[0xFED30008]",
+            "num_bits": 21,
+            "exclude_chars": ["="],
+            "output_cells": {
+                "B19": "LT_EXTENDED_STATUS[0xFED30008]",
+                "C19": "lt_extended_status_info_text",
+                "D19": "lt_extended_status_info_result"
+            },
+            "improper_print_message": "LT_extended_status is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {lt_extended_status_info_text}",
+            "result_text": [
+                {
+                    "description": "LT_EXTENDED_STATUS check",
+                    "output_format": "bit 0 is {bit0_status} - LT_poison_status is {poison_status}",
+                    "bit_check": 0,
+                    "bit_set_text": "set",
+                    "bit_unset_text": "unset",
+                    "bit_set_poison_status": "received",
+                    "bit_unset_poison_status": "not received"
+                }
+            ]
+        },
+        {
+            "name": "LT_BOOT_STATUS info",
+            "keyword": "LT_BOOT_STATUS[0xFED300A0]",
+            "num_bits": 21,
+            "exclude_chars": ["="],
+            "output_cells": {
+                "B20": "LT_BOOT_STATUS[0xFED300A0]",
+                "C20": "lt_boot_status_info_text",
+                "D20": "lt_boot_status_info_result"
+            },
+            "improper_print_message": "LT_boot_status is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {lt_boot_status_info_text}",
+            "result_text": [
+                {
+                    "description": "LT_BOOT_STATUS check",
+                    "output_format": "{bit30_status} - TXT startup {txt_status}\n{bit31_status} - BTG startup {btg_status}\n{bit59_status} - BIOS is {bios_status}\n{bit62_status} - CPU sets error as {cpu_error_status}\n{bit63_status} - S-ACM {sacm_status}",
+                    "bit30_check": 30,
+                    "bit31_check": 31,
+                    "bit59_check": 59,
+                    "bit62_check": 62,
+                    "bit63_check": 63,
+                    "bit_set_text": "Bit {bit} set",
+                    "bit_unset_text": "Bit {bit} is unset",
+                    "bit30_set_txt_status": "success",
+                    "bit30_unset_txt_status": "not success",
+                    "bit31_set_btg_status": "success",
+                    "bit31_unset_btg_status": "not success",
+                    "bit59_set_bios_status": "trusted as a part of TXT or BTG flow",
+                    "bit59_unset_bios_status": "untrusted",
+                    "bit62_set_cpu_error_status": "SACM authentication failed",
+                    "bit62_unset_cpu_error_status": "No CPU error - No SACM authentication failure",
+                    "bit63_set_sacm_status": "success as BTG/TXT flow is successful",
+                    "bit63_unset_sacm_status": "execution failed"
+                }
+            ]
+        },
+        {
+            "name": "LT_ERROR_CODE info",
+            "keyword": "LT_ERROR_CODE[0xFED30328]",
+            "num_bits": 21,
+            "exclude_chars": ["="],
+            "output_cells": {
+                "B21": "LT_ERROR_CODE[0xFED30328]",
+                "C21": "lt_error_code_info_text",
+                "D21": "lt_error_code_info_result"
+            },
+            "improper_print_message": "LT_error_status is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {lt_error_code_info_text}",
+            "result_text": [
+                {
+                    "description": "LT_ERROR_CODE check",
+                    "output_format": "Bit 31 is {bit31_status} - Entire content of this register is {register_status}\nBit 15 is {bit15_status} - SACM has {sacm_status}\nBit 30 is {bit30_status} - SACM has {error_status}",
+                    "bit31_check": 31,
+                    "bit15_check": 15,
+                    "bit30_check": 30,
+                    "bit_set_text": "set",
+                    "bit_unset_text": "unset",
+                    "bit31_set_register_status": "valid",
+                    "bit31_unset_register_status": "invalid",
+                    "bit15_set_sacm_status": "started successfully",
+                    "bit15_unset_sacm_status": "not started",
+                    "bit30_set_error_status": "generated errorcodes",
+                    "bit30_unset_error_status": "not generated errorcodes"
+                }
+            ]
+        },
+        {
+            "name": "LT_CRASH info",
+            "keyword": "LT_CRASH[0xFED30030]",
+            "num_bits": 21,
+            "exclude_chars": ["="],
+            "output_cells": {
+                "B22": "LT_CRASH[0xFED30030]",
+                "C22": "lt_crash_info_text",
+                "D22": "lt_crash_info_result"
+            },
+            "improper_print_message": "LT_crash is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {lt_crash_info_text}",
+            "result_text": [
+                {
+                    "description": "LT_CRASH check",
+                    "output_format": "Bit 31 is {bit31_status} - LT_Crash is {crash_status}\nCrash induced by {crash_source}",
+                    "bit31_check": 31,
+                    "bit30_check": 30,
+                    "bit_set_text": "set",
+                    "bit_unset_text": "unset",
+                    "bit31_set_crash_status": "set",
+                    "bit31_unset_crash_status": "not seen",
+                    "bit30_set_crash_source": "internal CPU",
+                    "bit30_unset_crash_source": "external ACM, MLE"
+                }
+            ]
+        },
+        {
+            "name": "SACM_INFO info",
+            "keyword": "MSR_BOOT_GUARD_SACM_INFO[0x0000013A]",
+            "num_bits": 21,
+            "exclude_chars": ["="],
+            "output_cells": {
+                "B23": "SACM_INFO[0x0000013A]",
+                "C23": "sacm_info_text",
+                "D23": "sacm_info_result"
+            },
+            "improper_print_message": "SACM_INFO is not present in log",
+            "validation_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "validation_failure_message": "improper print - {sacm_info_text}",
+            "result_text": [
+                {
+                    "description": "SACM_INFO check",
+                    "output_format": "Bit 34 is {bit34_status} - LT_SX_EN Fuse is {fuse_status}\nBit 32 is {bit32_status} - BTG is {btg_status}\n{btg_profile_status}",
+                    "bit34_check": 34,
+                    "bit32_check": 32,
+                    "bit0_check": 0,
+                    "bit2_check": 2,
+                    "bit3_check": 3,
+                    "bit4_check": 4,
+                    "bit5_check": 5,
+                    "bit6_check": 6,
+                    "bit_set_text": "set",
+                    "bit_unset_text": "unset",
+                    "bit34_set_fuse_status": "enabled",
+                    "bit34_unset_fuse_status": "disabled",
+                    "bit32_set_btg_status": "enabled",
+                    "bit32_unset_btg_status": "not enabled",
+                    "btg_profile_status": [
+                        {
+                            "condition": "bit0_set and bit2_set and bit3_set and bit4_set and bit5_set and bit6_set",
+                            "output": "BTG-5 profile is enabled & TPM Success"
+                        },
+                        {
+                            "condition": "bit0_set and bit2_set and bit3_set and bit5_set and bit6_set",
+                            "output": "BTG-3 profile is enabled & TPM Success"
+                        },
+                        {
+                            "condition": "bit0_set and bit4_set and bit6_set",
+                            "output": "BTG-4 profile is enabled"
+                        },
+                        {
+                            "condition": "not (bit0_set and bit2_set and bit3_set and bit4_set and bit5_set and bit6_set) and not (bit0_set and bit2_set and bit3_set and bit5_set and bit6_set) and not (bit0_set and bit4_set and bit6_set)",
+                            "output": "No BTG profile enabled"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "BIOS ID info",
+            "keyword": "Bios ID: ",
+            "num_bits": 0,
+            "output_cells": {
+                "B24": "BIOS ID",
+                "C24": "Bios_info_text"
+            },
+            "improper_print_message": "Bios_ID is not present in log"
         }
     ]
 }

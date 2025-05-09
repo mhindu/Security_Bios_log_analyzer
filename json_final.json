@@ -175,8 +175,8 @@
             "process_last_instance": true,
             "output_cells": {
                 "B7": "Is ACTM launch started?",
-                "C7": "ACTM launch status",
-                "D7": "ACTM launch status"
+                "C7": "ACTM launch started",
+                "D7": "ACTM launch started"
             },
             "secondary_keyword": "[ACTM] Launch skipped!",
             "secondary_output": "ACTM launch is skipped",
@@ -317,8 +317,10 @@
         {
             "name": "LT_STATUS info",
             "keyword": "LT_STATUS[0xFED30000]",
+            "num_bits": 21,
+            "exclude_chars": ["="],
             "start_index_offset": 0,
-            "regex_pattern": "^(0x)?[0-9A-Fa-f]{16}$",
+            "regex_pattern": "\\[?(0x[0-9A-Fa-f]{16})\\]?",
             "output_cells": {
                 "B15": "LT_STATUS[0xFED30000]",
                 "C15": "lt_status_text",
@@ -332,6 +334,8 @@
                     "description": "LT_STATUS check",
                     "output_format": "bit {bit_position} is {bit_status} - {bit_message}",
                     "bit_check": 1,
+                    "bit_set_text": "set",
+                    "bit_unset_text": "not set",
                     "bit_set_message": "SEEXIT Status is Done",
                     "bit_unset_message": "SEEXIT Status is Not Done"
                 }

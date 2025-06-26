@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 def load_rules():
-    rules_path = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_final.json")
+    rules_path = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_rules.json")
     with open(rules_path, "r") as f:
         return json.load(f)
 
@@ -46,7 +46,7 @@ def output_results(parsed_data):
         "Results from log": parsed_data.get("ia32_tme_activate_text", ""),
         "Analysis from Result": parsed_data.get("result_text_str", "")
     }
-    out_path = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "bios_log_output.json")
+    out_path = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_log_output.json")
     with open(out_path, "w") as f:
         json.dump(output_data, f, indent=4)
 
@@ -1353,6 +1353,6 @@ def process_log_file_to_json(log_file_path, json_rules_path, output_json_path):
 
 if __name__ == "__main__":
     log_file = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "SGX_enablement_putty.log")
-    json_rules = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_final.json")
-    output_json = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "bios_log_output.json")
+    json_rules = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_rules.json")
+    output_json = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_log_output.json")
     process_log_file_to_json(log_file, json_rules, output_json)

@@ -1,0 +1,191 @@
+[
+    {
+        "Security Features": "MKTME info",
+        "Feature check": "TME_ACTIVATE MSR 982h",
+        "Results from log": "0x000400160000002B",
+        "Analysis from Result": [
+            "Total key bits: 0x6 - ie.Total 64 keys are allocated",
+            "TME bit: 0x1 - ie. key0 is allocated",
+            "TDX key bits: 0x1",
+            "mktme_alg_enable: 0x4 ie. AES-XTS-256 alg is enabled"
+        ]
+    },
+    {
+        "Security Features": "MKTME info",
+        "Feature check": "TME_CAPABILITY MSR 981h",
+        "Results from log": "0x00007FFB 8000000F",
+        "Analysis from Result": [
+            "mktme_max_keyid_bits: 0xB ie. 2048 keys",
+            "mktme_max_keys: 0x7FF ie. [0-2047 keys]"
+        ]
+    },
+    {
+        "Security Features": "MKTME info",
+        "Feature check": "MKTME: total keys",
+        "Results from log": "63",
+        "Analysis from Result": [
+            "Total keys allocated: key0 - key63"
+        ]
+    },
+    {
+        "Security Features": "MKTME info",
+        "Feature check": "mktme key-ids",
+        "Results from log": "31",
+        "Analysis from Result": [
+            "Mktme keys allocated: key1 - key31",
+            "TDX keys allocated: key31 - key63"
+        ]
+    },
+    {
+        "Security Features": "ACTM info",
+        "Feature check": "ACTM location",
+        "Results from log": "0xFF580000",
+        "Analysis from Result": [
+            "ACTM location: 0xFF580000"
+        ]
+    },
+    {
+        "Security Features": "ACTM info",
+        "Feature check": "Is ACTM launch started?",
+        "Results from log": "ACTM launch started",
+        "Analysis from Result": [
+            "ACTM launch started"
+        ]
+    },
+    {
+        "Security Features": "ACTM info",
+        "Feature check": "ACTM ErrorCode",
+        "Results from log": "0x0",
+        "Analysis from Result": [
+            "ACTM ErrorCode: 0x0"
+        ]
+    },
+    {
+        "Security Features": "ACTM info",
+        "Feature check": "Is this PROD SKU?",
+        "Results from log": "0x9D000000",
+        "Analysis from Result": [
+            "Bit 31 is set, It is prod SKU, recommended Prod patches"
+        ]
+    },
+    {
+        "Security Features": "Mcheck info",
+        "Feature check": "Mcheck Error Code",
+        "Results from log": "0xCC5",
+        "Analysis from Result": [
+            "Mcheck Error is INVALID_TAD_CHANNEL_MAPPING_ERR"
+        ]
+    },
+    {
+        "Security Features": "SGX info",
+        "Feature check": "Is SGX enabled?",
+        "Results from log": "SGX (Secure Enclaves) feature enabled.",
+        "Analysis from Result": [
+            "Pass: SGX feature is enabled"
+        ]
+    },
+    {
+        "Security Features": "TDX info",
+        "Feature check": "TDX Build Date and version",
+        "Results from log": "build_date 20240826, build_num 803",
+        "Analysis from Result": [
+            "build_date 20240826, build_num 803"
+        ]
+    },
+    {
+        "Security Features": "TDX info",
+        "Feature check": "Is TDX module initialized?",
+        "Results from log": "TDX module is initialized",
+        "Analysis from Result": [
+            "TDX module is initialized"
+        ]
+    },
+    {
+        "Security Features": "SEAMRR info",
+        "Feature check": "Is SEAMRR Initialized?",
+        "Results from log": "[  200.864716] svtdx: Driver and seamrr target initialized",
+        "Analysis from Result": [
+            "SEAMRR target are initialized"
+        ]
+    },
+    {
+        "Security Features": "SEAMRR info",
+        "Feature check": "SEAMRR_BASE MSR 1400h",
+        "Results from log": "0x0000001076000008",
+        "Analysis from Result": [
+            "Bit 3 is set, Bios configured SEAMRR_Base"
+        ]
+    },
+    {
+        "Security Features": "SEAMRR info",
+        "Feature check": "SEAMRR_MASK MSR 1401h",
+        "Results from log": "0x000FFFFFFE000400",
+        "Analysis from Result": [
+            "only bit 10 lock bit is set"
+        ]
+    },
+    {
+        "Security Features": "BTG & TXT info",
+        "Feature check": "LT_STATUS[0xFED30000]",
+        "Results from log": "0x0000000000004092",
+        "Analysis from Result": [
+            "bit 1 is set - SEEXIT Status is Done"
+        ]
+    },
+    {
+        "Security Features": "BTG & TXT info",
+        "Feature check": "LT_EXTENDED_STATUS[0xFED30008]",
+        "Results from log": "0x0000000000000000",
+        "Analysis from Result": [
+            "bit 0 is unset - LT_poison_status is not received"
+        ]
+    },
+    {
+        "Security Features": "BTG & TXT info",
+        "Feature check": "LT_BOOT_STATUS[0xFED300A0]",
+        "Results from log": "0x9946000080000000",
+        "Analysis from Result": [
+            "Bit 30 is unset - TXT startup not success",
+            "Bit 31 set - BTG startup success",
+            "Bit 59 set - BIOS is trusted as a part of TXT or BTG flow",
+            "Bit 62 is unset - CPU sets error as No CPU error - No SACM authentication failure",
+            "Bit 63 set - S-ACM success as BTG/TXT flow is successful"
+        ]
+    },
+    {
+        "Security Features": "BTG & TXT info",
+        "Feature check": "LT_ERROR_CODE[0xFED30328]",
+        "Results from log": "0x00000000C0008000",
+        "Analysis from Result": [
+            "Bit 31 is set - Entire content of this register is valid",
+            "Bit 15 is set - SACM has started successfully",
+            "Bit 30 is set - SACM has generated errorcodes"
+        ]
+    },
+    {
+        "Security Features": "BTG & TXT info",
+        "Feature check": "LT_CRASH[0xFED30030]",
+        "Results from log": "0x0000000000000000",
+        "Analysis from Result": [
+            "Bit 31 is unset - LT_Crash is not seen"
+        ]
+    },
+    {
+        "Security Features": "BTG & TXT info",
+        "Feature check": "SACM_INFO[0x0000013A]",
+        "Results from log": "0x0000008F0000007D",
+        "Analysis from Result": [
+            "Bit 34 set - LT_SX_EN Fuse is enabled",
+            "Bit 32 set - BTG is enabled",
+            "BTG-5 profile is enabled & TPM Success"
+        ]
+    },
+    {
+        "Security Features": "SYSTEM info",
+        "Feature check": "BIOS ID",
+        "Results from log": "KVLDCRB1.SAJ.0027.D92.2411260752",
+        "Analysis from Result": [
+            "KVLDCRB1.SAJ.0027.D92.2411260752"
+        ]
+    }
+]

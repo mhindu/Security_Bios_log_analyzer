@@ -129,7 +129,7 @@
                 {
                     "description": "TDX keys allocated",
                     "condition": "total_keys_text != mktme_key_text",
-                    "output_format": "TDX keys allocated: key{mktme_key_text} - key{total_keys_text}"
+                    "output_format": "TDX keys allocated: key{tdx_start_key} - key{total_keys_text}"
                 },
                 {
                     "description": "No TDX keys allocated",

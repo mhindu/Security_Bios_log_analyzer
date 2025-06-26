@@ -3,9 +3,14 @@ import re
 import os
 import pandas as pd
 
+# === File Path Constants ===
+BASE_DIR = r"c:\Users\hindum\Desktop\my personal\VSCode_projects\pandas\security1"
+LOG_FILE_PATH = os.path.join(BASE_DIR, "actm_hang.log")
+JSON_RULES_PATH = os.path.join(BASE_DIR, "json_rules.json")
+OUTPUT_JSON_PATH = os.path.join(BASE_DIR, "json_log_output_actm_hang.json")
+
 def load_rules():
-    rules_path = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_rules.json")
-    with open(rules_path, "r") as f:
+    with open(JSON_RULES_PATH, "r") as f:
         return json.load(f)
 
 def parse_log(log_path, rules):
@@ -46,8 +51,7 @@ def output_results(parsed_data):
         "Results from log": parsed_data.get("ia32_tme_activate_text", ""),
         "Analysis from Result": parsed_data.get("result_text_str", "")
     }
-    out_path = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_log_output.json")
-    with open(out_path, "w") as f:
+    with open(OUTPUT_JSON_PATH, "w") as f:
         json.dump(output_data, f, indent=4)
 
 def analyse_ia32_tme_activate(keyword, result, rule):
@@ -261,17 +265,33 @@ def analyze_mktme_keys(keyword, log_file_path, rule, total_keys_text):
                 condition = output["condition"]
                 condition_evaluated = eval(condition, {}, {"total_keys_text": int(total_keys_text), "mktme_key_text": mktme_key_text})
                 if condition_evaluated:
-                    analysis.append(output["output_format"].format(
-                        total_keys_text=total_keys_text,
-                        mktme_key_text=mktme_key_text
-                    ))
+                    # Special handling for TDX key range
+                    if "TDX keys allocated" in output["output_format"]:
+                        analysis.append(output["output_format"].format(
+                            total_keys_text=total_keys_text,
+                            mktme_key_text=mktme_key_text,
+                            tdx_start_key=mktme_key_text + 1
+                        ))
+                    else:
+                        analysis.append(output["output_format"].format(
+                            total_keys_text=total_keys_text,
+                            mktme_key_text=mktme_key_text
+                        ))
             except Exception:
                 continue
         else:
-            analysis.append(output["output_format"].format(
-                total_keys_text=total_keys_text,
-                mktme_key_text=mktme_key_text
-            ))
+            # Special handling for TDX key range
+            if "TDX keys allocated" in output["output_format"]:
+                analysis.append(output["output_format"].format(
+                    total_keys_text=total_keys_text,
+                    mktme_key_text=mktme_key_text,
+                    tdx_start_key=mktme_key_text + 1
+                ))
+            else:
+                analysis.append(output["output_format"].format(
+                    total_keys_text=total_keys_text,
+                    mktme_key_text=mktme_key_text
+                ))
     return {
         "Results from log": extracted,
         "Analysis from Result": analysis
@@ -470,6 +490,12 @@ def analyze_mcheck_error_code(keyword, log_file_path, rule):
         return {
             "Results from log": extracted,
             "Analysis from Result": [rule.get("validation_failure_message", "improper print - {mcheck_code_text}").format(mcheck_code_text=extracted)]
+        }
+    # Special case: if extracted is 0x0, print 'no mcheck error'
+    if extracted == "0x0":
+        return {
+            "Results from log": extracted,
+            "Analysis from Result": ["No mcheck error"]
         }
     # Try to look up error description from Excel if possible
     error_description = "Unknown error"
@@ -939,6 +965,11 @@ def analyze_lt_error_code_info(keyword, log_file_path, rule):
     else:
         rep["bit31_status"] = "unset"
         rep["register_status"] = output.get("bit31_unset_register_status", "invalid from bits 30:0")
+        # Ensure all keys used in output_format are present
+        rep["bit15_status"] = "N/A"
+        rep["sacm_status"] = "N/A"
+        rep["bit30_status"] = "N/A"
+        rep["error_status"] = "N/A"
     analysis = output["output_format"].format(**rep)
     analysis_lines = [line for line in analysis.split("\n") if line.strip()]
     return {
@@ -1030,13 +1061,12 @@ def analyze_sacm_info(keyword, log_file_path, rule):
     else:
         result_text.append("Bit 34 is unset - LT_SX_EN Fuse is disabled")
     if bit32_set:
-        result_text.append("Bit 32 set - BTG is enabled")
         if bit0_set and bit2_set and bit3_set and bit4_set and bit5_set and bit6_set:
-            result_text.append("BTG-5 profile is enabled & TPM Success")
+            result_text.append("Bit 32 set & BTG-5 profile is enabled & TPM Success")
         elif bit0_set and bit2_set and bit3_set and bit5_set and bit6_set:
-            result_text.append("BTG-3 profile is enabled & TPM Success")
+            result_text.append("Bit 32 set & BTG-3 profile is enabled & TPM Success")
         elif bit0_set and bit4_set and bit6_set:
-            result_text.append("BTG-4 profile is enabled")
+            result_text.append("Bit 32 set & BTG-4 profile is enabled")
         else:
             result_text.append("No BTG profile enabled")
     else:
@@ -1068,7 +1098,7 @@ def analyze_bios_id_info(keyword, log_file_path, rule):
         "Analysis from Result": [extracted]
     }
 
-def process_log_file_to_json(log_file_path, json_rules_path, output_json_path):
+def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_RULES_PATH, output_json_path=OUTPUT_JSON_PATH):
     with open(json_rules_path, 'r') as f:
         rules = json.load(f)
     results = []
@@ -1352,7 +1382,4 @@ def process_log_file_to_json(log_file_path, json_rules_path, output_json_path):
         json.dump(results, f, indent=4)
 
 if __name__ == "__main__":
-    log_file = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "SGX_enablement_putty.log")
-    json_rules = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_rules.json")
-    output_json = os.path.join("c:\\Users\\hindum\\Desktop\\my personal\\VSCode_projects\\pandas\\security1", "json_log_output.json")
-    process_log_file_to_json(log_file, json_rules, output_json)
+    process_log_file_to_json()

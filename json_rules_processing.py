@@ -5,9 +5,9 @@ import pandas as pd
 
 # === File Path Constants ===
 BASE_DIR = r"c:\Users\hindum\Desktop\my personal\VSCode_projects\pandas\security1"
-LOG_FILE_PATH = os.path.join(BASE_DIR, "actm_hang.log")
+LOG_FILE_PATH = os.path.join(BASE_DIR, "SGX_enablement_putty.log")
 JSON_RULES_PATH = os.path.join(BASE_DIR, "json_rules.json")
-OUTPUT_JSON_PATH = os.path.join(BASE_DIR, "json_log_output_actm_hang.json")
+OUTPUT_JSON_PATH = os.path.join(BASE_DIR, "json_log_output_SGX_enablement_putty.json")
 
 def load_rules():
     with open(JSON_RULES_PATH, "r") as f:
@@ -580,6 +580,38 @@ def analyze_tdx_build_date(keyword, log_file_path, rule):
         "Results from log": build_info if build_info else extracted,
         "Analysis from Result": [build_info if build_info else extracted]
     }
+def analyze_tdmr_cmr_range(keyword, log_file_path, rule):
+    """
+    Analyze TDMR CMR Range from the log file using the rule from JSON.
+    Returns a dict with 'Results from log' and 'Analysis from Result' (as a list of strings).
+    Extracts the bracketed range (e.g., [0x100000000, 0x1076000000)) immediately following the keyword.
+    """
+    # Build a regex to match the keyword and capture the bracketed range
+    # Example log: tdx-svos: TDMR: adding CMR: [0x100000000, 0x1076000000)
+    pattern = re.compile(r"{}.*?(\[[^\]]+\))".format(re.escape(keyword)), re.IGNORECASE)
+    extracted = None
+    with open(log_file_path, 'r') as file:
+        for line in file:
+            match = pattern.search(line)
+            if match:
+                extracted = match.group(1)
+                break
+    if not extracted:
+        return {
+            "Results from log": "",
+            "Analysis from Result": [rule.get("improper_print_message", "improper print - TDMR CMR range not found")]
+        }
+    analysis = []
+    for field in rule.get("fields", []):
+        output = field.get("output_format", "TDMR CMR Range: {value}").format(value=extracted)
+        analysis.append(output)
+    # If no fields/output_format, just return the extracted value
+    if not analysis:
+        analysis = [extracted]
+    return {
+        "Results from log": extracted,
+        "Analysis from Result": analysis
+    }
 
 def analyze_tdx_module_initialization(keyword, log_file_path, rule):
     """
@@ -724,6 +756,35 @@ def analyze_seamrr_mask_range(keyword, log_file_path, rule):
             "Results from log": "SEAMRR Mask range is not present in log",
             "Analysis from Result": ["SEAMRR Mask range is not present in log"]
         }
+def analyze_acm_build_date(keyword, log_file_path, rule):
+    """
+    Analyze ACM Build Date from the log file using the rule from JSON.
+    Returns a dict with 'Results from log' and 'Analysis from Result' (as a list of strings).
+    Extracts the date in YYYYMMDD format after the keyword.
+    """
+    pattern = re.compile(rule.get("regex_pattern", r"ACM Build Date:\\s*(\\d{8})"))
+    extracted = None
+    with open(log_file_path, 'r') as file:
+        for line in file:
+            match = pattern.search(line)
+            if match:
+                extracted = match.group(1)
+                break
+    if not extracted:
+        return {
+            "Results from log": "",
+            "Analysis from Result": [rule.get("improper_print_message", "improper print - ACM Build Date not found")]
+        }
+    analysis = []
+    for field in rule.get("fields", []):
+        output = field.get("output_format", "ACM Build Date: {value} (YYYYMMDD)").format(value=extracted)
+        analysis.append(output)
+    if not analysis:
+        analysis = [extracted]
+    return {
+        "Results from log": extracted,
+        "Analysis from Result": analysis
+    }
 
 def analyze_lt_status_info(keyword, log_file_path, rule):
     """
@@ -1098,6 +1159,54 @@ def analyze_bios_id_info(keyword, log_file_path, rule):
         "Analysis from Result": [extracted]
     }
 
+def analyze_dimm_size(rule, log_file_path):
+    """
+    Analyze DIMM Size from the log file using the rule from JSON.
+    Returns a dict with 'Results from log' and 'Analysis from Result' (as a list of strings).
+    Extracts all matches using the regex_pattern and outputs only the last instance for each channel.
+    Adds calculation in the analysis output: 'Channel X: DDR Size Y (Z) - Y x Z = ... GB'.
+    """
+    regex_pattern = rule.get("regex_pattern")
+    improper_print_message = rule.get("improper_print_message", "improper print - DIMM Size not found")
+    output_format = rule.get("output_format", "Channel {1}: DDR Size {2} ({3})")
+    last_channels = {}
+    if regex_pattern:
+        pattern = re.compile(regex_pattern, re.IGNORECASE)
+        with open(log_file_path, 'r') as file:
+            for line in file:
+                match = pattern.search(line)
+                if match:
+                    channel = match.group(1)
+                    last_channels[channel] = match.groups()
+    if not last_channels:
+        return {
+            "Results from log": "",
+            "Analysis from Result": [improper_print_message]
+        }
+    # Only output the last instance for each channel, sorted by channel number
+    results_lines = []
+    analysis_lines = []
+    for ch in sorted(last_channels.keys(), key=int):
+        groups = last_channels[ch]
+        formatted = output_format
+        for idx, val in enumerate(groups, 1):
+            formatted = formatted.replace(f'{{{idx}}}', str(val))
+        # Calculation part
+        try:
+            ddr_size = int(groups[1])
+            mb_str = groups[2].replace('MB', '').strip()
+            mb_size = int(mb_str)
+            gb_total = ddr_size * mb_size / 1024
+            gb_total_str = f"{int(gb_total)} GB" if gb_total.is_integer() else f"{gb_total:.2f} GB"
+        except Exception:
+            gb_total_str = "? GB"
+        analysis_lines.append(f"Channel {groups[0]}: DDR Size {groups[1]} ({groups[2]}) - {groups[1]} x {groups[2]} = {gb_total_str}")
+        results_lines.append(f"Channel: {groups[0]}, DDR Size: {groups[1]} ({groups[2]})")
+    return {
+        "Results from log": "\n".join(results_lines),
+        "Analysis from Result": analysis_lines
+    }
+
 def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_RULES_PATH, output_json_path=OUTPUT_JSON_PATH):
     with open(json_rules_path, 'r') as f:
         rules = json.load(f)
@@ -1113,10 +1222,12 @@ def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_R
     mcheck_error_code_rule = None
     sgx_enabled_rule = None
     tdx_build_date_rule = None
+    tdmr_cmr_range_rule = None
     tdx_module_init_rule = None
     seamrr_init_rule = None
     seamrr_base_rule = None
     seamrr_mask_rule = None
+    acm_build_date_rule = None
     lt_status_rule = None
     lt_extended_status_rule = None
     lt_boot_status_rule = None
@@ -1124,6 +1235,8 @@ def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_R
     lt_crash_rule = None
     sacm_info_rule = None
     bios_id_rule = None
+    dimm_size_rule = None
+    
     for rule in rules.get("checks", []):
         if rule.get("msr") == "982h":
             tme_activate_rule = rule
@@ -1147,6 +1260,8 @@ def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_R
             sgx_enabled_rule = rule
         elif rule.get("name", "").lower().startswith("tdx build date"):
             tdx_build_date_rule = rule
+        elif rule.get("name", "").lower().startswith("tdmr cmr range"):
+            tdmr_cmr_range_rule = rule
         elif rule.get("name", "").lower().startswith("tdx module initialization"):
             tdx_module_init_rule = rule
         elif rule.get("name", "").lower().startswith("seamrr initialization"):
@@ -1155,6 +1270,8 @@ def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_R
             seamrr_base_rule = rule
         elif rule.get("name", "").lower().startswith("seamrr_mask"):
             seamrr_mask_rule = rule
+        elif rule.get("name", "").lower().startswith("acm build date"):
+            acm_build_date_rule = rule    
         elif rule.get("name", "").lower().startswith("lt_status"):
             lt_status_rule = rule
         elif rule.get("name", "").lower().startswith("lt_extended_status"):
@@ -1169,6 +1286,9 @@ def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_R
             sacm_info_rule = rule
         elif rule.get("name", "").lower().startswith("bios id"):
             bios_id_rule = rule
+        elif rule.get("name", "").lower().startswith("dimm size"):
+            dimm_size_rule = rule
+        
     total_keys_text = None
     if tme_activate_rule:
         keyword = tme_activate_rule.get("keyword", "")
@@ -1279,6 +1399,15 @@ def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_R
             "Results from log": analysis_dict["Results from log"],
             "Analysis from Result": analysis_dict["Analysis from Result"]
         })
+    if tdmr_cmr_range_rule:
+        keyword = tdmr_cmr_range_rule.get("keyword", "")
+        analysis_dict = analyze_tdmr_cmr_range(keyword, log_file_path, tdmr_cmr_range_rule)
+        results.append({
+            "Security Features": "TDX info",
+            "Feature check": "TDMR CMR Range",
+            "Results from log": analysis_dict["Results from log"],
+            "Analysis from Result": analysis_dict["Analysis from Result"]
+        })    
     if tdx_module_init_rule:
         keyword = tdx_module_init_rule.get("keyword", "")
         analysis_dict = analyze_tdx_module_initialization(keyword, log_file_path, tdx_module_init_rule)
@@ -1315,6 +1444,15 @@ def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_R
             "Results from log": analysis_dict["Results from log"],
             "Analysis from Result": analysis_dict["Analysis from Result"]
         })
+    if acm_build_date_rule:
+        keyword = acm_build_date_rule.get("keyword", "")
+        analysis_dict = analyze_acm_build_date(keyword, log_file_path, acm_build_date_rule)
+        results.append({
+            "Security Features": "ACM info",
+            "Feature check": "ACM Build Date",
+            "Results from log": analysis_dict["Results from log"],
+            "Analysis from Result": analysis_dict["Analysis from Result"]
+        })    
     if lt_status_rule:
         keyword = lt_status_rule.get("keyword", "")
         analysis_dict = analyze_lt_status_info(keyword, log_file_path, lt_status_rule)
@@ -1378,6 +1516,16 @@ def process_log_file_to_json(log_file_path=LOG_FILE_PATH, json_rules_path=JSON_R
             "Results from log": analysis_dict["Results from log"],
             "Analysis from Result": analysis_dict["Analysis from Result"]
         })
+    if dimm_size_rule:
+        analysis_dict = analyze_dimm_size(dimm_size_rule, log_file_path)
+        results.append({
+            "Security Features": "MEMORY info",
+            "Feature check": "DIMM Size",
+            "Results from log": analysis_dict["Results from log"],
+            "Analysis from Result": analysis_dict["Analysis from Result"]
+        })
+ 
+    
     with open(output_json_path, 'w') as f:
         json.dump(results, f, indent=4)
 

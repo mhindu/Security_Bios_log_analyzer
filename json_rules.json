@@ -12,17 +12,20 @@
         "SGX (Secure Enclaves) feature enabled": ["SGX info", "Is SGX enabled?"],
         "build_date ": ["TDX info", "TDX module build date"],
         "build_num ": ["TDX info", "TDX module build version"],
+        "TDMR CMR Range": ["TDX info", "tdx-svos: TDMR: adding CMR:"],
         "TDX module initialized": ["TDX info", "Is TDX module initialized?"],
         "Driver and seamrr target initialized": ["TDX info", "Is SEAMRR Initialized?"],
         "SEAMRR_BASE MSR 1400h": ["TDX info", "SEAMRR_BASE MSR 1400h"],
         "SEAMRR_MASK MSR 1401h": ["TDX info", "SEAMRR_MASK MSR 1401h"],
+        "ACM Build Date": ["BTG & TXT info", "ACM Build Date"],
         "LT_STATUS[0xFED30000]": ["BTG & TXT info", "LT_STATUS[0xFED30000]"],
         "LT_EXTENDED_STATUS[0xFED30008]": ["BTG & TXT info", "LT_EXTENDED_STATUS[0xFED30008]"],
         "LT_BOOT_STATUS[0xFED300A0]": ["BTG & TXT info", "LT_BOOT_STATUS[0xFED300A0]"],
         "LT_ERROR_CODE[0xFED30328]": ["BTG & TXT info", "LT_ERROR_CODE[0xFED30328]"],
         "LT_CRASH[0xFED30030]": ["BTG & TXT info", "LT_CRASH[0xFED30030]"],
         "MSR_BOOT_GUARD_SACM_INFO[0x0000013A]": ["BTG & TXT info", "SACM_INFO[0x0000013A]"],
-        "Bios ID: ": ["System info", "BIOS ID"]
+        "Bios ID: ": ["System info", "BIOS ID"],
+        "DIMM Info ": ["System info", "DIMM Info "]
   },
   "checks": [
     {
@@ -228,11 +231,24 @@
             "improper_print_message": "SGX is not enabled",
             "secondary_output": "SGX is enabled"
         },
-         {
+        {
             "name": "TDX build date check",
             "keyword": "build_date ",
             "num_bits": 8,
             "improper_print_message": "TDX is not enabled"
+        },
+        {
+            "name": "TDMR CMR Range",
+            "keyword": "tdx-svos: TDMR: adding CMR:",
+            "regex_pattern": "tdx-svos: TDMR: adding CMR:.*?(\\[[^\\]]+\\))",
+            "fields": [
+                {
+                    "description": "TDMR CMR Range",
+                    "group": 1,
+                    "output_format": "TDMR CMR Range: {value}"
+                }
+            ],
+            "improper_print_message": "improper print - TDMR CMR range not found"
         },
         {
             "name": "TDX module initialization check",
@@ -285,7 +301,20 @@
                 }
             ]
         },
-         {
+        {
+            "name": "ACM Build Date",
+            "keyword": "ACM Build Date:",
+            "regex_pattern": "ACM Build Date:\\s*(\\d{8})",
+            "fields": [
+                {
+                "description": "ACM Build Date",
+                "group": 1,
+                "output_format": "ACM Build Date: {value} (YYYYMMDD)"
+                }
+            ],
+            "improper_print_message": "improper print - ACM Build Date not found"
+        },
+        {
             "name": "LT_STATUS info",
             "keyword": "LT_STATUS[0xFED30000]",
             "num_bits": 21,
@@ -458,6 +487,30 @@
             "keyword": "Bios ID: ",
             "num_bits": 0,
             "improper_print_message": "Bios_ID is not present in log"
+        },
+        {
+            "name": "DIMM Size",
+            "keyword": "Channel   :",
+            "regex_pattern": "Channel\\s*:\\s*(\\d)\\s*DDR Size\\s*:\\s*(\\d+)\\((\\d+MB)\\)",
+            "fields": [
+                {
+                "description": "Channel Number",
+                "group": 1,
+                "output_format": "Channel: {value}"
+                },
+                {
+                "description": "DDR Size Value",
+                "group": 2,
+                "output_format": "DDR Size: {value}"
+                },
+                {
+                "description": "DDR Size Human Readable",
+                "group": 3,
+                "output_format": "({value})"
+                }
+            ],
+            "output_format": "Channel {1}: DDR Size {2} ({3})",
+            "improper_print_message": "improper print - DIMM Size not found"
         }
     ]
 }
